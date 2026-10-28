@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Switch AI × Mattermost — AI Engineering Team</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              orange: '#ff895e',
+              orangeHover: '#ff7542',
+              blue: '#1c58d9',
+              blueHover: '#1545ad',
+              dark: '#0c0d0f',
+              darker: '#070809',
+              card: '#14161a',
+              cardBorder: '#23272f',
+              sidebar: '#101216'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    code, pre { font-family: 'JetBrains Mono', monospace; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0c0d0f; }
+    ::-webkit-scrollbar-thumb { background: #23272f; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #374151; }
+    .pulse-glow {
+      box-shadow: 0 0 12px rgba(34, 197, 94, 0.4);
+    }
+  </style>
+</head>
+<body class="bg-brand-darker text-gray-200 h-screen flex flex-col overflow-hidden select-none">
+
+  <!-- Top Navigation Bar -->
+  <header class="h-14 border-b border-brand-cardBorder bg-brand-dark flex items-center justify-between px-4 shrink-0 z-20">
+    <div class="flex items-center space-x-3">
+      <!-- Switch + Mattermost Logo Badge -->
+      <div class="flex items-center space-x-2 bg-brand-card px-2.5 py-1.5 rounded-lg border border-brand-cardBorder">
+        <div class="w-6 h-6 rounded bg-gradient-to-tr from-brand-orange to-amber-400 flex items-center justify-center font-bold text-black text-xs shadow">
+          S
+        </div>
+        <span class="font-bold text-sm tracking-tight text-white">Switch AI</span>
+        <span class="text-xs text-gray-500 font-mono">×</span>
+        <div class="w-6 h-6 rounded bg-brand-blue flex items-center justify-center font-bold text-white text-xs shadow">
+          M
+        </div>
+        <span class="font-bold text-sm tracking-tight text-white">Mattermost</span>
+      </div>
+
+      <div class="h-4 w-px bg-brand-cardBorder"></div>
+
+      <div class="flex items-center space-x-2">
+        <span class="text-xs font-semibold uppercase tracking-wider text-brand-orange bg-brand-orange/10 px-2 py-0.5 rounded border border-brand-orange/20">
+          AI Engineering Team
+        </span>
+        <span class="text-xs text-gray-400 font-mono hidden md:inline">Flip the Switch Hackathon</span>
+      </div>
+    </div>
+
+    <!-- Center/Right Status Indicators & Quick Actions -->
+    <div class="flex items-center space-x-3">
+      <!-- Live Switch Bridge Status -->
+      <div id="status-pill" class="flex items-center space-x-2 bg-brand-card px-3 py-1 rounded-full border border-brand-cardBorder text-xs text-gray-300">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 pulse-glow"></span>
+        <span id="switch-status-text">Switch Bridge: Active</span>
+      </div>
+
+      <!-- Antigravity Badge -->
+      <div class="hidden lg:flex items-center space-x-1.5 bg-brand-card px-2.5 py-1 rounded-full border border-brand-cardBorder text-xs text-gray-300">
+        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-brand-orange"></i>
+        <span>Antigravity: <span id="antigravity-status" class="text-emerald-400 font-mono">Fallback Engine</span></span>
+      </div>
+
+      <!-- Quick Demo Triggers -->
+      <button onclick="triggerQuickDemo('bug')" class="hidden sm:flex items-center space-x-1.5 bg-gradient-to-r from-brand-orange to-amber-500 hover:from-brand-orangeHover hover:to-amber-600 text-black font-semibold text-xs px-3 py-1.5 rounded-lg shadow transition active:scale-95">
+        <i data-lucide="bug" class="w-3.5 h-3.5"></i>
+        <span>Quick Bug Demo</span>
+      </button>
+
+      <button onclick="triggerQuickDemo('feature')" class="hidden md:flex items-center space-x-1.5 bg-brand-card hover:bg-zinc-800 text-white font-medium text-xs px-3 py-1.5 rounded-lg border border-brand-cardBorder transition active:scale-95">
+        <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-brand-orange"></i>
+        <span>Quick Feature Demo</span>
+      </button>
+
+      <button onclick="refreshData()" title="Refresh" class="p-1.5 rounded-lg bg-brand-card hover:bg-zinc-800 border border-brand-cardBorder text-gray-400 hover:text-white transition">
+        <i data-lucide="refresh-cw" id="refresh-icon" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main View Area (Split Panels) -->
+  <main class="flex-1 flex overflow-hidden">
+
+    <!-- ========================================== -->
+    <!-- LEFT PANEL: Mattermost Chat Room Simulator -->
+    <!-- ========================================== -->
+    <section class="w-full lg:w-[48%] flex flex-col border-r border-brand-cardBorder bg-brand-sidebar">
+
+      <!-- Channel Sub-Header -->
+      <div class="h-12 border-b border-brand-cardBorder px-4 flex items-center justify-between bg-brand-dark/50 shrink-0">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="hash" class="w-4 h-4 text-gray-400"></i>
+          <span class="font-bold text-sm text-white">engineering</span>
+          <span class="text-xs text-gray-500 hidden sm:inline">| AI Team Coordination</span>
+        </div>
+        <div class="flex items-center space-x-2 text-xs text-gray-400">
+          <span class="flex items-center space-x-1">
+            <i data-lucide="users" class="w-3.5 h-3.5"></i>
+            <span>3 Agents + You</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Chat Messages Scroll Container -->
+      <div id="chat-stream" class="flex-1 overflow-y-auto p-4 space-y-4">
+        <!-- Welcome Message -->
+        <div class="flex items-start space-x-3 bg-brand-card/40 p-3.5 rounded-xl border border-brand-cardBorder/60">
+          <div class="w-8 h-8 rounded-full bg-brand-blue/20 text-brand-blue flex items-center justify-center font-bold text-xs shrink-0 border border-brand-blue/30">
+            🤖
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center space-x-2 mb-1">
+              <span class="font-bold text-xs text-white">Switch AI System</span>
+              <span class="text-[10px] bg-brand-blue/20 text-brand-blue px-1.5 py-0.2 rounded font-mono uppercase font-bold">Bot</span>
+              <span class="text-[10px] text-gray-500 font-mono">Ready</span>
+            </div>
+            <p class="text-xs text-gray-300 leading-relaxed">
+              Welcome to the <strong>AI Engineering Team</strong> room! You can assign tasks by tagging <code class="text-brand-orange bg-black/40 px-1 py-0.5 rounded">@lead-engineer</code>, <code class="text-brand-orange bg-black/40 px-1 py-0.5 rounded">@issue-triager</code>, or <code class="text-brand-orange bg-black/40 px-1 py-0.5 rounded">@code-reviewer</code>.
+              File modifications require your explicit approval before execution.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat Input Area -->
+      <div class="p-3 border-t border-brand-cardBorder bg-brand-dark">
+        <!-- Quick Mention Chips -->
+        <div class="flex items-center space-x-1.5 mb-2 overflow-x-auto pb-1 text-[11px]">
+          <span class="text-gray-500 text-[10px] font-mono mr-1">TAG:</span>
+          <button onclick="insertMention('@lead-engineer ')" class="bg-zinc-800 hover:bg-zinc-700 text-brand-orange px-2 py-0.5 rounded-full border border-zinc-700 transition font-mono">
+            @lead-engineer
+          </button>
+          <button onclick="insertMention('@issue-triager ')" class="bg-zinc-800 hover:bg-zinc-700 text-blue-400 px-2 py-0.5 rounded-full border border-zinc-700 transition font-mono">
+            @issue-triager
+          </button>
+          <button onclick="insertMention('@code-reviewer ')" class="bg-zinc-800 hover:bg-zinc-700 text-emerald-400 px-2 py-0.5 rounded-full border border-zinc-700 transition font-mono">
+            @code-reviewer
+          </button>
+          <button onclick="insertMention('!approve ')" class="bg-emerald-950/60 hover:bg-emerald-900 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-800/60 transition font-mono ml-auto">
+            !approve &lt;id&gt;
+          </button>
+        </div>
+
+        <form id="chat-form" onsubmit="handleChatSubmit(event)" class="flex items-center space-x-2">
+          <input
+            id="chat-input"
+            type="text"
+            autocomplete="off"
+            placeholder="Type a message (e.g. @lead-engineer Fix division by zero in calculator.py)..."
+            class="flex-1 bg-brand-card border border-brand-cardBorder rounded-lg px-3.5 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-brand-orange transition"
+          />
+          <button
+            type="submit"
+            id="chat-send-btn"
+            class="bg-brand-blue hover:bg-brand-blueHover text-white p-2 rounded-lg transition active:scale-95 flex items-center justify-center shrink-0 shadow"
+          >
+            <i data-lucide="send" class="w-4 h-4"></i>
+          </button>
+        </form>
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- RIGHT PANEL: Multi-Tab Operations Console   -->
+    <!-- ========================================== -->
+    <section class="hidden lg:flex flex-1 flex-col bg-brand-dark overflow-hidden">
+
+      <!-- Navigation Tabs -->
+      <div class="h-12 border-b border-brand-cardBorder px-4 flex items-center justify-between bg-brand-sidebar shrink-0">
+        <div class="flex items-center space-x-1 text-xs">
+          <button onclick="switchTab('tasks')" id="tab-btn-tasks" class="tab-btn px-3 py-1.5 rounded-lg font-medium transition flex items-center space-x-1.5 bg-brand-card text-brand-orange border border-brand-cardBorder">
+            <i data-lucide="kanban" class="w-3.5 h-3.5"></i>
+            <span>Task Board (<span id="task-count">0</span>)</span>
+          </button>
+          <button onclick="switchTab('approval')" id="tab-btn-approval" class="tab-btn px-3 py-1.5 rounded-lg font-medium transition flex items-center space-x-1.5 text-gray-400 hover:text-white hover:bg-zinc-800">
+            <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>
+            <span>Human Approval Gate</span>
+            <span id="approval-badge" class="hidden w-2 h-2 rounded-full bg-amber-400"></span>
+          </button>
+          <button onclick="switchTab('diff')" id="tab-btn-diff" class="tab-btn px-3 py-1.5 rounded-lg font-medium transition flex items-center space-x-1.5 text-gray-400 hover:text-white hover:bg-zinc-800">
+            <i data-lucide="file-diff" class="w-3.5 h-3.5"></i>
+            <span>Code Diff & Tests</span>
+          </button>
+          <button onclick="switchTab('audit')" id="tab-btn-audit" class="tab-btn px-3 py-1.5 rounded-lg font-medium transition flex items-center space-x-1.5 text-gray-400 hover:text-white hover:bg-zinc-800">
+            <i data-lucide="scroll" class="w-3.5 h-3.5"></i>
+            <span>Security Audit Trail</span>
+          </button>
+        </div>
+
+        <div class="text-[11px] text-gray-500 font-mono">
+          Target: <span class="text-gray-300">./sample_repo</span>
+        </div>
+      </div>
+
+      <!-- Tab Content Area -->
+      <div class="flex-1 overflow-y-auto p-4">
+
+        <!-- TAB 1: Task Board / State Machine -->
+        <div id="tab-pane-tasks" class="tab-pane space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-bold text-white flex items-center space-x-2">
+              <i data-lucide="layers" class="w-4 h-4 text-brand-orange"></i>
+              <span>Engineering Tasks Pipeline</span>
+            </h2>
+            <span class="text-xs text-gray-400 font-mono">Real-time state machine tracking</span>
+          </div>
+
+          <div id="tasks-container" class="space-y-3">
+            <div class="text-center py-12 text-gray-500 text-xs">
+              <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+              <p>No engineering tasks created yet.</p>
+              <p class="mt-1 text-gray-600">Send a request in chat or click "Quick Bug Demo" above!</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: Human Approval Gate -->
+        <div id="tab-pane-approval" class="tab-pane hidden space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-bold text-white flex items-center space-x-2">
+              <i data-lucide="shield-check" class="w-4 h-4 text-amber-400"></i>
+              <span>Human Approval & Risk Governance Gate</span>
+            </h2>
+            <span class="text-xs text-amber-400/80 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20 font-mono">
+              Strict Gatekeeper Enabled
+            </span>
+          </div>
+
+          <div id="pending-approvals-container" class="space-y-3">
+            <div class="bg-brand-card p-6 rounded-xl border border-brand-cardBorder text-center">
+              <i data-lucide="shield" class="w-10 h-10 mx-auto text-emerald-500/60 mb-2"></i>
+              <p class="text-sm font-medium text-gray-300">No Pending Approvals</p>
+              <p class="text-xs text-gray-500 mt-1 max-w-md mx-auto">
+                Whenever the Lead Engineer plans code modifications or risky actions, they will appear here requiring human sign-off before files are written.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: Code Diff & Pytest Execution -->
+        <div id="tab-pane-diff" class="tab-pane hidden space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-bold text-white flex items-center space-x-2">
+              <i data-lucide="code-2" class="w-4 h-4 text-brand-orange"></i>
+              <span>Code Modification Diff & Pytest Verification</span>
+            </h2>
+            <span id="diff-branch-badge" class="text-xs text-gray-400 font-mono">Branch: None</span>
+          </div>
+
+          <!-- Code Diff Card -->
+          <div class="bg-brand-card rounded-xl border border-brand-cardBorder overflow-hidden">
+            <div class="bg-zinc-900 px-3.5 py-2 border-b border-brand-cardBorder flex items-center justify-between text-xs font-mono">
+              <span class="text-gray-300 flex items-center space-x-1.5">
+                <i data-lucide="file-code" class="w-3.5 h-3.5 text-brand-orange"></i>
+                <span id="diff-file-name">sample_repo/calculator.py</span>
+              </span>
+              <span class="text-emerald-400">Unified Diff</span>
+            </div>
+            <pre id="diff-content" class="p-4 text-xs text-gray-300 overflow-x-auto leading-relaxed bg-[#0b0c0e]">No active diff to display yet. Run a task to see changes.</pre>
+          </div>
+
+          <!-- Pytest Output Card -->
+          <div class="bg-brand-card rounded-xl border border-brand-cardBorder overflow-hidden">
+            <div class="bg-zinc-900 px-3.5 py-2 border-b border-brand-cardBorder flex items-center justify-between text-xs font-mono">
+              <span class="text-gray-300 flex items-center space-x-1.5">
+                <i data-lucide="terminal" class="w-3.5 h-3.5 text-blue-400"></i>
+                <span>Automated Test Suite Execution (pytest)</span>
+              </span>
+              <span id="pytest-status-badge" class="text-gray-500">Idle</span>
+            </div>
+            <pre id="pytest-output" class="p-4 text-xs text-gray-300 overflow-x-auto leading-relaxed bg-[#0b0c0e]">No test results available.</pre>
+          </div>
+        </div>
+
+        <!-- TAB 4: Security Audit Trail -->
+        <div id="tab-pane-audit" class="tab-pane hidden space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-bold text-white flex items-center space-x-2">
+              <i data-lucide="history" class="w-4 h-4 text-brand-orange"></i>
+              <span>Immutable Audit Trail (audit.log)</span>
+            </h2>
+            <span class="text-xs text-gray-400 font-mono">Path Sandboxing & Event Ledger</span>
+          </div>
+
+          <div class="bg-brand-card rounded-xl border border-brand-cardBorder overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs font-mono">
+                <thead class="bg-zinc-900 text-gray-400 border-b border-brand-cardBorder uppercase text-[10px]">
+                  <tr>
+                    <th class="py-2.5 px-3">Timestamp</th>
+                    <th class="py-2.5 px-3">Actor</th>
+                    <th class="py-2.5 px-3">Action</th>
+                    <th class="py-2.5 px-3">Details</th>
+                  </tr>
+                </thead>
+                <tbody id="audit-table-body" class="divide-y divide-brand-cardBorder text-gray-300">
+                  <tr>
+                    <td colspan="4" class="py-4 text-center text-gray-500">Loading audit records...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Interactive JavaScript Engine -->
+  <script>
+    // State Tracking
+    let knownTasks = {};
+    let pendingApprovalCount = 0;
+    let currentTab = 'tasks';
+
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // Tab Switching
+    function switchTab(tabName) {
+      currentTab = tabName;
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-brand-card', 'text-brand-orange', 'border', 'border-brand-cardBorder');
+        btn.classList.add('text-gray-400');
+      });
+      document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.add('hidden'));
+
+      const activeBtn = document.getElementById(`tab-btn-${tabName}`);
+      const activePane = document.getElementById(`tab-pane-${tabName}`);
+
+      if (activeBtn) {
+        activeBtn.classList.add('bg-brand-card', 'text-brand-orange', 'border', 'border-brand-cardBorder');
+        activeBtn.classList.remove('text-gray-400');
+      }
+      if (activePane) activePane.classList.remove('hidden');
+
+      lucide.createIcons();
+    }
+
+    // Insert Mention Chip into Chat Input
+    function insertMention(text) {
+      const input = document.getElementById('chat-input');
+      input.value = text + input.value;
+      input.focus();
+    }
+
+    // Quick Demo Triggers
+    async function triggerQuickDemo(type) {
+      const input = document.getElementById('chat-input');
+      if (type === 'bug') {
+        input.value = "@lead-engineer Fix unhandled division by zero in calculator.py so it raises ValueError when denominator is 0";
+      } else {
+        input.value = "@lead-engineer Add power(a, b) exponentiation function to calculator.py with full test coverage";
+      }
+      handleChatSubmit(new Event('submit'));
+    }
+
+    // Chat Message Rendering
+    function appendChatMessage(sender, badge, roleColor, text, cardData = null) {
+      const stream = document.getElementById('chat-stream');
+      const msgDiv = document.createElement('div');
+      msgDiv.className = "flex items-start space-x-3 bg-brand-card/50 p-3.5 rounded-xl border border-brand-cardBorder transition";
+
+      let avatarBg = "bg-brand-blue/20 text-brand-blue border-brand-blue/30";
+      let icon = "🧑";
+      if (sender.includes('engineer')) {
+        avatarBg = "bg-brand-orange/20 text-brand-orange border-brand-orange/30";
+        icon = "⚙️";
+      } else if (sender.includes('triager')) {
+        avatarBg = "bg-blue-500/20 text-blue-400 border-blue-500/30";
+        icon = "📋";
+      } else if (sender.includes('reviewer')) {
+        avatarBg = "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+        icon = "🔍";
+      }
+
+      let cardHtml = "";
+      if (cardData) {
+        cardHtml = `
+          <div class="mt-2.5 p-3 rounded-lg bg-zinc-900 border border-brand-cardBorder text-xs space-y-2">
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-1.5">
+              <span class="font-bold text-white">${cardData.title || cardData.id}</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-zinc-800 text-brand-orange border border-zinc-700">${cardData.status}</span>
+            </div>
+            ${cardData.ac ? `
+              <div>
+                <span class="text-gray-400 font-semibold text-[11px]">Acceptance Criteria:</span>
+                <ul class="list-disc list-inside text-gray-300 mt-1 space-y-0.5">
+                  ${cardData.ac.map(c => `<li>${c}</li>`).join('')}
+                </ul>
+              </div>
+            ` : ''}
+            ${cardData.approvalId ? `
+              <div class="pt-2 flex items-center space-x-2">
+                <button onclick="approveRequest('${cardData.approvalId}')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-3 py-1.5 rounded-lg shadow transition active:scale-95 flex items-center space-x-1">
+                  <span>✅ Approve Change</span>
+                </button>
+                <button onclick="rejectRequest('${cardData.approvalId}')" class="bg-zinc-800 hover:bg-zinc-700 text-red-400 font-medium text-xs px-3 py-1.5 rounded-lg border border-zinc-700 transition active:scale-95">
+                  <span>🛑 Reject</span>
+                </button>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }
+
+      msgDiv.innerHTML = `
+        <div class="w-8 h-8 rounded-full ${avatarBg} flex items-center justify-center font-bold text-xs shrink-0 border shadow">
+          ${icon}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center space-x-2 mb-1">
+            <span class="font-bold text-xs text-white">${sender}</span>
+            ${badge ? `<span class="text-[10px] bg-zinc-800 text-gray-300 px-1.5 py-0.2 rounded font-mono uppercase font-bold border border-zinc-700">${badge}</span>` : ''}
+            <span class="text-[10px] text-gray-500 font-mono">${new Date().toLocaleTimeString()}</span>
+          </div>
+          <p class="text-xs text-gray-200 leading-relaxed whitespace-pre-wrap">${text}</p>
+          ${cardHtml}
+        </div>
+      `;
+
+      stream.appendChild(msgDiv);
+      stream.scrollTop = stream.scrollHeight;
+      lucide.createIcons();
+    }
+
+    // Chat Submission Handler
+    async function handleChatSubmit(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById('chat-input');
+      const text = input.value.trim();
+      if (!text) return;
+
+      appendChatMessage("You", "Developer", "text-white", text);
+      input.value = "";
+
+      try {
+        const resp = await fetch('/api/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: text, user_id: 'developer', room_id: 'engineering' })
+        });
+        if (!resp.ok) {
+          appendChatMessage("System", "Error", "text-red-400", "Failed to assign task: " + resp.statusText);
+          return;
+        }
+        const task = await resp.json();
+        renderTaskUpdate(task);
+      } catch (err) {
+        appendChatMessage("System", "Error", "text-red-400", "Connection error: " + err.message);
+      }
+    }
+
+    // Human Approval Actions
+    async function approveRequest(approvalId) {
+      try {
+        const res = await fetch(`/api/approvals/${approvalId}/approve`, { method: 'POST' });
+        const data = await res.json();
+        appendChatMessage("You", "Approval", "text-emerald-400", `✅ Approved change request ${approvalId}`);
+        refreshData();
+      } catch (err) {
+        alert("Failed to approve: " + err);
+      }
+    }
+
+    async function rejectRequest(approvalId) {
+      try {
+        const res = await fetch(`/api/approvals/${approvalId}/reject`, { method: 'POST' });
+        const data = await res.json();
+        appendChatMessage("You", "Rejection", "text-red-400", `🛑 Rejected change request ${approvalId}`);
+        refreshData();
+      } catch (err) {
+        alert("Failed to reject: " + err);
+      }
+    }
+
+    // Render / Update Task In UI
+    function renderTaskUpdate(task) {
+      const prev = knownTasks[task.id];
+      knownTasks[task.id] = task;
+
+      // If status changed to AWAITING_APPROVAL, notify in chat
+      if (!prev || prev.status !== task.status) {
+        if (task.status === 'AWAITING_APPROVAL') {
+          const appReq = task.approvals && task.approvals[0];
+          appendChatMessage("Lead Engineer", "BOT", "text-brand-orange", `Task ${task.id} requires human authorization to modify files.`, {
+            title: task.title,
+            id: task.id,
+            status: task.status,
+            ac: task.acceptance_criteria,
+            approvalId: appReq ? appReq.request_id : null
+          });
+        } else if (task.status === 'COMPLETED') {
+          appendChatMessage("Code Reviewer", "BOT", "text-emerald-400", `🎉 Task ${task.id} successfully completed and verified! All tests passed.`, {
+            title: task.title,
+            id: task.id,
+            status: task.status,
+            ac: task.acceptance_criteria
+          });
+        }
+      }
+
+      // Update Diff Tab if proposed changes exist
+      if (task.proposed_changes && task.proposed_changes.length > 0) {
+        const c = task.proposed_changes[0];
+        document.getElementById('diff-file-name').innerText = c.file_path;
+        document.getElementById('diff-branch-badge').innerText = `Branch: ${task.branch_name || 'fix/' + task.id.toLowerCase()}`;
+        if (c.diff) {
+          document.getElementById('diff-content').innerText = c.diff;
+        } else {
+          document.getElementById('diff-content').innerText = c.new_content;
+        }
+      }
+
+      // Update Pytest card
+      if (task.test_results) {
+        const tr = task.test_results;
+        document.getElementById('pytest-status-badge').innerText = tr.passed ? "✅ 5 Passed" : "❌ Failed";
+        document.getElementById('pytest-status-badge').className = tr.passed ? "text-emerald-400 font-bold" : "text-red-400 font-bold";
+        document.getElementById('pytest-output').innerText = tr.stdout || tr.summary;
+      }
+    }
+
+    // Main Data Refresh Loop
+    async function refreshData() {
+      const icon = document.getElementById('refresh-icon');
+      if (icon) icon.classList.add('animate-spin');
+
+      try {
+        // 1. Fetch Tasks
+        const tasksRes = await fetch('/api/tasks');
+        if (tasksRes.ok) {
+          const tasks = await tasksRes.json();
+          document.getElementById('task-count').innerText = tasks.length;
+          renderTaskBoard(tasks);
+        }
+
+        // 2. Fetch Readiness
+        const readyRes = await fetch('/ready');
+        if (readyRes.ok) {
+          const ready = await readyRes.json();
+          if (ready.antigravity && ready.antigravity.name) {
+            document.getElementById('antigravity-status').innerText = ready.antigravity.status;
+          }
+        }
+
+        // 3. Fetch Audit Logs
+        const auditRes = await fetch('/api/audit');
+        if (auditRes.ok) {
+          const logs = await auditRes.json();
+          renderAuditTable(logs);
+        }
+
+      } catch (e) {
+        console.warn("Polling error:", e);
+      } finally {
+        if (icon) setTimeout(() => icon.classList.remove('animate-spin'), 400);
+      }
+    }
+
+    // Render Task Board
+    function renderTaskBoard(tasks) {
+      const container = document.getElementById('tasks-container');
+      const approvalContainer = document.getElementById('pending-approvals-container');
+      const approvalBadge = document.getElementById('approval-badge');
+
+      if (!tasks || tasks.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-12 text-gray-500 text-xs">
+            <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+            <p>No engineering tasks created yet.</p>
+            <p class="mt-1 text-gray-600">Send a request in chat or click "Quick Bug Demo" above!</p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      let pendingApprovals = [];
+
+      container.innerHTML = tasks.map(t => {
+        renderTaskUpdate(t);
+
+        let statusColor = "bg-blue-500/20 text-blue-400 border-blue-500/30";
+        if (t.status === 'AWAITING_APPROVAL') {
+          statusColor = "bg-amber-500/20 text-amber-400 border-amber-500/30";
+          if (t.approvals) {
+            t.approvals.filter(a => a.status === 'PENDING').forEach(a => pendingApprovals.push({ task: t, approval: a }));
+          }
+        } else if (t.status === 'COMPLETED') {
+          statusColor = "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+        } else if (t.status === 'FAILED' || t.status === 'REJECTED') {
+          statusColor = "bg-red-500/20 text-red-400 border-red-500/30";
+        }
+
+        return `
+          <div class="bg-brand-card p-4 rounded-xl border border-brand-cardBorder space-y-2.5 transition hover:border-zinc-700">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-sm text-white">${t.title}</span>
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold border ${statusColor}">
+                ${t.status}
+              </span>
+            </div>
+            <div class="flex items-center space-x-3 text-xs text-gray-400 font-mono">
+              <span>ID: <strong class="text-gray-200">${t.id}</strong></span>
+              <span>Type: <strong class="text-brand-orange">${t.task_type}</strong></span>
+              <span>Agent: <strong class="text-blue-400">${t.assigned_agent}</strong></span>
+            </div>
+            ${t.target_files && t.target_files.length ? `
+              <div class="text-xs text-gray-400">
+                <span class="font-medium text-gray-500">Target Files:</span>
+                <span class="font-mono text-gray-300">${t.target_files.join(', ')}</span>
+              </div>
+            ` : ''}
+            ${t.test_results ? `
+              <div class="p-2 rounded bg-zinc-900 border border-zinc-800 text-xs font-mono flex items-center justify-between">
+                <span>Tests: ${t.test_results.passed ? '✅ Passed' : '❌ Failed'}</span>
+                <span class="text-gray-400">${t.test_results.summary}</span>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+
+      // Update Pending Approvals Tab
+      if (pendingApprovals.length > 0) {
+        approvalBadge.classList.remove('hidden');
+        approvalContainer.innerHTML = pendingApprovals.map(item => `
+          <div class="bg-brand-card p-5 rounded-xl border border-amber-500/40 bg-amber-500/5 space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+                <span class="font-bold text-sm text-white">${item.task.title}</span>
+              </div>
+              <span class="text-xs font-mono text-amber-400 uppercase bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">
+                ${item.approval.action_type}
+              </span>
+            </div>
+            <p class="text-xs text-gray-300 leading-relaxed font-mono whitespace-pre-wrap">${item.approval.description}</p>
+            <div class="pt-2 flex items-center space-x-3 border-t border-brand-cardBorder">
+              <button onclick="approveRequest('${item.approval.request_id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-4 py-2 rounded-lg shadow transition active:scale-95 flex items-center space-x-1.5">
+                <i data-lucide="check" class="w-4 h-4"></i>
+                <span>Approve Change</span>
+              </button>
+              <button onclick="rejectRequest('${item.approval.request_id}')" class="bg-zinc-800 hover:bg-zinc-700 text-red-400 font-medium text-xs px-4 py-2 rounded-lg border border-zinc-700 transition active:scale-95 flex items-center space-x-1.5">
+                <i data-lucide="x" class="w-4 h-4"></i>
+                <span>Reject</span>
+              </button>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        approvalBadge.classList.add('hidden');
+        approvalContainer.innerHTML = `
+          <div class="bg-brand-card p-6 rounded-xl border border-brand-cardBorder text-center">
+            <i data-lucide="shield" class="w-10 h-10 mx-auto text-emerald-500/60 mb-2"></i>
+            <p class="text-sm font-medium text-gray-300">No Pending Approvals</p>
+            <p class="text-xs text-gray-500 mt-1 max-w-md mx-auto">
+              Whenever the Lead Engineer plans code modifications or risky actions, they will appear here requiring human sign-off before files are written.
+            </p>
+          </div>
+        `;
+      }
+
+      lucide.createIcons();
+    }
+
+    // Render Audit Trail
+    function renderAuditTable(logs) {
+      const tbody = document.getElementById('audit-table-body');
+      if (!logs || logs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-gray-500">No audit records yet.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = logs.slice(-25).reverse().map(l => {
+        let actionBadge = "bg-zinc-800 text-gray-300";
+        if (l.action.includes('DENIED')) actionBadge = "bg-red-500/20 text-red-400 border border-red-500/30";
+        else if (l.action.includes('APPROVAL')) actionBadge = "bg-amber-500/20 text-amber-400 border border-amber-500/30";
+        else if (l.action.includes('WRITE')) actionBadge = "bg-blue-500/20 text-blue-400 border border-blue-500/30";
+        else if (l.action.includes('TEST')) actionBadge = "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+
+        const timeStr = l.timestamp ? new Date(l.timestamp).toLocaleTimeString() : "-";
+        return `
+          <tr class="hover:bg-zinc-800/40 transition">
+            <td class="py-2 px-3 text-gray-400">${timeStr}</td>
+            <td class="py-2 px-3 font-semibold text-white">${l.actor}</td>
+            <td class="py-2 px-3">
+              <span class="px-2 py-0.5 rounded text-[10px] ${actionBadge}">${l.action}</span>
+            </td>
+            <td class="py-2 px-3 text-gray-400 max-w-xs truncate">${JSON.stringify(l.details || {})}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Initial Load & Polling Interval (every 1.5 seconds)
+    refreshData();
+    setInterval(refreshData, 1500);
+  </script>
+</body>
+</html>
